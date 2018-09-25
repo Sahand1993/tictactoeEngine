@@ -3,9 +3,9 @@ package TTT3D;
 import java.util.*;
 
 public class Player {
-    private static final int MAX_DEPTH = 2;
+    private static final int MAX_DEPTH = 1;
     private static final int[] BASES = new int[]{1, (1) * 76 + 1, ((1) * 76 + 1) * 76 + 1, (((1) * 76 + 1) * 76 + 1) * 76 + 1};
-
+    private static GameState bestState;
     /**
      * Performs a move
      *
@@ -28,8 +28,9 @@ public class Player {
          * Here you should write your algorithms to get the best next move, i.e.
          * the best next state. This skeleton returns a random move instead.
          */
-        GameState best = bestMove(nextStates, gameState.getNextPlayer());
-        return best;
+        minimax(gameState, MAX_DEPTH, Integer.MIN_VALUE, Integer.MAX_VALUE, gameState.getNextPlayer());
+        System.err.println(bestState);
+        return bestState;
 
         // do the move with the highest score
 
@@ -41,42 +42,30 @@ public class Player {
 
     /**
      * Calls the minimax algorithm on each possible next move and returns the best one.
-     * @param nextStates
+     * @param gameState
      * @param player: the player who is deciding which state in nextStates is best.
      * @return
      */
-    private GameState bestMove(Vector<GameState> nextStates, int player) {
-        int maxScore = Integer.MIN_VALUE;
-        int minScore = Integer.MAX_VALUE;
-        int tempMax, tempMin;
+/*
+    private GameState bestMove(GameState gameState, int player) {
+        int maxScore;
+        int minScore;
         GameState bestState = null; // the state of the best move
         if(player == Constants.CELL_X) {// Player is max and wants to maximize the score
-            for (GameState nextState : nextStates) {
-                // TODO: do these become negative for X? fix it.
-                tempMax = minimax(nextState, MAX_DEPTH, Integer.MIN_VALUE, Integer.MAX_VALUE, player); // TODO: try changing this to other player
-                if (tempMax > maxScore) {
-                    maxScore = tempMax;
-                    bestState = nextState;
-                }
-            }
+            maxScore = minimax(gameState, MAX_DEPTH, Integer.MIN_VALUE, Integer.MAX_VALUE, player);
         }
         else if(player == Constants.CELL_O) { // Player is min and wants to minimize the score
-            for(GameState nextState : nextStates) {
-                tempMin = minimax(nextState, MAX_DEPTH, Integer.MIN_VALUE, Integer.MAX_VALUE, player);
-                if (tempMin < minScore) {
-                    minScore = tempMin;
-                    bestState = nextState;
-                }
-            }
+            minScore = minimax(gameState, MAX_DEPTH, Integer.MIN_VALUE, Integer.MAX_VALUE, player);
         }
         return bestState;
     }
+*/
 
     /**
      * The minimax algorithm with alpha-beta pruning.
      * @param gameState: the state we want to evaluate.
      * @param player: the current player
-     * @return the score of gameState
+     * @return [the score of best gameState, Move]
      */
     private int minimax(GameState gameState, int depth, int alpha, int beta, int player) {
         int v; // Our evaluation result
@@ -88,10 +77,14 @@ public class Player {
         }
 
         else if(player == Constants.CELL_X){
+            System.err.println("we're X");
             v = Integer.MIN_VALUE;
             for(GameState nextState : nextStates){
                 v = Math.max(v, minimax(nextState, depth - 1, alpha, beta, Constants.CELL_O));
-                alpha = Math.max(alpha, v);
+                if(v > alpha){
+                    alpha = v;
+                    bestState = nextState;
+                }
                 if(beta <= alpha){
                     break;
                 }
@@ -101,7 +94,10 @@ public class Player {
             v = Integer.MAX_VALUE;
             for(GameState nextState : nextStates){
                 v = Math.min(v, minimax(nextState, depth - 1, alpha, beta, Constants.CELL_X));
-                beta = Math.min(beta, v);
+                if(v < beta){
+                    beta = v;
+                    bestState = nextState;
+                }
                 if(beta <= alpha) {
                     break;
                 }
@@ -113,8 +109,6 @@ public class Player {
     //
     private int evaluate(GameState gameState) {
         int score = 0;
-        int opponent;
-
         int[] pInLines = new int[GameState.BOARD_SIZE];
         int[] oInLines = new int[GameState.BOARD_SIZE];
 

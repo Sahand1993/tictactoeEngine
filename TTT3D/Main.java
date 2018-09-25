@@ -63,7 +63,7 @@ public class Main {
           System.err.println("Interpreted: '" + input_message + "'");
           System.err.println("As:      '" + input_state.toMessage() + "'");
           System.err.println(input_state.toString(input_state.getNextPlayer()));
-          assert(false);
+          assert (false);
         }
 
         /* Print the input state */
@@ -79,27 +79,28 @@ public class Main {
 
         /* Figure out the next move */
         GameState output_state = player.play(input_state, deadline);
-
+        System.err.println("played");
         /* Exit if deadline has been exceeded */
         if (deadline.timeUntil() < 0) {
           System.exit(152);
         }
-
+        System.err.println("passed timeout");
         /* Check if output state is correct */
         Vector<GameState> output_states = new Vector<GameState>();
         input_state.findPossibleMoves(output_states);
         boolean output_state_correct = false;
-        for (int i = 0; i < output_states.size(); ++i)
-        	if (output_state.isEqual(output_states.elementAt(i)))
-        	{
-        		output_state_correct = true;
-        		break;
-        	}
+        for (int i = 0; i < output_states.size(); ++i){
+          if (output_state.isEqual(output_states.elementAt(i))) {
+            output_state_correct = true;
+            break;
+          }
+        }
         if (!output_state_correct) {
         	System.exit(134);
         }
 
         /* Print the output state */
+        System.err.println("About to print output state");
         if (verbose) {
           System.err.println(output_state.toMessage());
           System.err.println(output_state.toString(input_state.getNextPlayer()));
