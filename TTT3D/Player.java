@@ -3,7 +3,7 @@ package TTT3D;
 import java.util.*;
 
 public class Player {
-    private static final int MAX_DEPTH = 1;
+    private static final int MAX_DEPTH = 2;
     private static final int[] BASES = new int[]{1, (1) * 76 + 1, ((1) * 76 + 1) * 76 + 1, (((1) * 76 + 1) * 76 + 1) * 76 + 1};
     private static GameState bestState;
     /**
@@ -29,15 +29,7 @@ public class Player {
          * the best next state. This skeleton returns a random move instead.
          */
         minimax(gameState, MAX_DEPTH, Integer.MIN_VALUE, Integer.MAX_VALUE, gameState.getNextPlayer());
-        System.err.println(bestState);
         return bestState;
-
-        // do the move with the highest score
-
-        // Inside nextStates is our model
-        //Random random = new Random();
-        //return nextStates.elementAt(random.nextInt(nextStates.size()));
-
     }
 
     /**
@@ -77,13 +69,15 @@ public class Player {
         }
 
         else if(player == Constants.CELL_X){
-            System.err.println("we're X");
             v = Integer.MIN_VALUE;
             for(GameState nextState : nextStates){
                 v = Math.max(v, minimax(nextState, depth - 1, alpha, beta, Constants.CELL_O));
                 if(v > alpha){
                     alpha = v;
-                    bestState = nextState;
+                    if(depth == MAX_DEPTH){
+                        bestState = nextState;
+                    }
+
                 }
                 if(beta <= alpha){
                     break;
@@ -96,7 +90,9 @@ public class Player {
                 v = Math.min(v, minimax(nextState, depth - 1, alpha, beta, Constants.CELL_X));
                 if(v < beta){
                     beta = v;
-                    bestState = nextState;
+                    if(depth == MAX_DEPTH){
+                        bestState = nextState;
+                    }
                 }
                 if(beta <= alpha) {
                     break;
