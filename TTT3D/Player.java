@@ -3,7 +3,7 @@ package TTT3D;
 import java.util.*;
 
 public class Player {
-    private static final int MAX_DEPTH = 1;
+    private static final int MAX_DEPTH = 2;
     private static final int[] BASES = new int[]{1, (1) * 76 + 1, ((1) * 76 + 1) * 76 + 1, (((1) * 76 + 1) * 76 + 1) * 76 + 1};
     /**
      * Performs a move
@@ -28,7 +28,12 @@ public class Player {
          * the best next state. This skeleton returns a random move instead.
          */
 
+        System.err.println("at start of game with x to move getNextPlayer is");
+        System.err.println(gameState.getNextPlayer());
         GameState best = bestMove(nextStates, gameState.getNextPlayer());
+        System.err.println("the best:");
+        System.err.println(best.toString(1));
+        System.exit(1);
         return best;
 
         // do the move with the highest score
@@ -42,22 +47,43 @@ public class Player {
     /**
      * Calls the minimax algorithm on each possible next move and returns the best one.
      * @param nextStates
-     * @param player: the player whose turn it is in nextStates (opponent on kattis)
+     * @param player: the player who is deciding which state in nextStates is best.
      * @return
      */
     private GameState bestMove(Vector<GameState> nextStates, int player) {
         int maxScore = Integer.MIN_VALUE;
-        int tempMax;
+        int minScore = Integer.MAX_VALUE;
+        int tempMax, tempMin;
         GameState bestState = null; // the state of the best move
-        for (GameState nextState : nextStates) {
-            // TODO: do these become negative for X? fix it.
-            tempMax = minimax(nextState, MAX_DEPTH, Integer.MIN_VALUE, Integer.MAX_VALUE, nextState.getNextPlayer()); // TODO: try changing this to other player
-
-            if (tempMax > maxScore) {
-                maxScore = tempMax;
-                bestState = nextState;
+        System.err.println("player is:::");
+        System.err.println(player);
+        if(player == Constants.CELL_X) {// Player is max and wants to maximize the score
+            System.err.println("player was O");
+            for (GameState nextState : nextStates) {
+                // TODO: do these become negative for X? fix it.
+                tempMax = minimax(nextState, MAX_DEPTH, Integer.MIN_VALUE, Integer.MAX_VALUE, player); // TODO: try changing this to other player
+                System.err.println(nextState.toString(player));
+                System.err.printf("score of above: \n%s\n", tempMax);
+                if (tempMax > maxScore) {
+                    maxScore = tempMax;
+                    bestState = nextState;
+                }
             }
         }
+        else if(player == Constants.CELL_O) { // Player is min and wants to minimize the score
+            System.err.println("player was X");
+            for(GameState nextState : nextStates) {
+                tempMin = minimax(nextState, MAX_DEPTH, Integer.MIN_VALUE, Integer.MAX_VALUE, player);
+                System.err.println(nextState.toString(player));
+                System.err.printf("score of above: \n%s\n", tempMin);
+                if (tempMin < minScore) {
+                    minScore = tempMin;
+                    bestState = nextState;
+                }
+            }
+        }
+        System.err.println("best state is:");
+        System.err.println(bestState);
         return bestState;
     }
 
@@ -73,7 +99,7 @@ public class Player {
         gameState.findPossibleMoves(nextStates);
 
         if(depth == 0 || nextStates.size() == 0) {
-            v = evaluate(player, gameState);
+            v = evaluate(gameState);
         }
 
         else if(player == Constants.CELL_X){
@@ -100,26 +126,12 @@ public class Player {
     }
 
     //
-    private int evaluate(int player, GameState gameState) {
+    private int evaluate(GameState gameState) {
         int score = 0;
         int opponent;
-        if(player == Constants.CELL_X)
-            opponent = Constants.CELL_O;
-        else
-            opponent = Constants.CELL_X;
+
         int[] pInLines = new int[GameState.BOARD_SIZE];
         int[] oInLines = new int[GameState.BOARD_SIZE];
-
-        // count number of n-in-lines by each player and value them like:
-        // 1 in row = 1 point
-        // 2 in row = 11 points
-        // 3 in row = 111 points
-        // 4 in row = 1111 points
-
-        // do orthogonal rows
-        // do all rows and cols from bottom layer to top. That way you get 32 of the 48
-        // then, for the top layer, do the lines going right through to the bottom. Then
-        // you have the remaining 16
 
         int pInLine;
         int oInLine;
@@ -237,7 +249,7 @@ public class Player {
             oScore += oInLines[i] * BASES[i];
         }
         // X is always max
-        return (player == Constants.CELL_X) ? pScore - oScore : oScore - pScore;
+        return pScore - oScore;
     }
 
     /**
