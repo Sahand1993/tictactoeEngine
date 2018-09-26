@@ -6,7 +6,7 @@ public class Player {
     private int depth;
     private int currDepth;
     private static final int[] BASES = new int[]{1, (1) * 76 + 1, ((1) * 76 + 1) * 76 + 1, Integer.MAX_VALUE};
-    private static final int[] OPP_EXTRA = new int[]{0, 0, (((1) * 76 + 1) * 76 + 1) * 76, 0};
+    private static final int[] OPP_EXTRA = new int[]{0, 0, 0, (((1) * 76 + 1) * 76 + 1) * 76};
 
     /**
      * here you can get scores[n][x] where n is the n in n-in-line and x is the number of n-in-lines
@@ -16,9 +16,6 @@ public class Player {
     public int totalTime = 0;
     public int sortingTime = 0;
 
-    public static void main(String[] args){
-
-    }
 
     /**
      * Performs a move
@@ -44,7 +41,7 @@ public class Player {
          * the best next state. This skeleton returns a random move instead.
          */
 
-        depth = 4;
+        depth = 2;
         minimax(gameState, depth, Integer.MIN_VALUE, Integer.MAX_VALUE, gameState.getNextPlayer());
         long end = System.nanoTime();
         System.err.printf("move time: %f\n", (double) (end - start) / 1000000);
