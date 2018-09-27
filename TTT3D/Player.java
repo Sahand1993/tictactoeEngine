@@ -124,7 +124,7 @@ public class Player {
          * the best next state. This skeleton returns a random move instead.
          */
 
-        depth = 2;
+        depth = 1;
         minimax(gameState, depth, Integer.MIN_VALUE, Integer.MAX_VALUE, gameState.getNextPlayer());
         long end = System.nanoTime();
         System.err.printf("move time: %f\n", (double) (end - start) / 1000000);
