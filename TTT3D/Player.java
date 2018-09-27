@@ -3,10 +3,94 @@ package TTT3D;
 import java.util.*;
 
 public class Player {
+    public static final int[][] LINES = {
+            {0, 1, 2, 3}, // row 1
+            {4, 5, 6, 7}, // row 2
+            {8, 9, 10, 11}, // row 3
+            {12, 13, 14, 15}, // row 4
+            {16, 17, 18, 19}, // row 5
+            {20, 21, 22, 23}, // row 6
+            {24, 25, 26, 27}, // row 7
+            {28, 29, 30, 31}, // row 8
+            {32, 33, 34, 35}, // row 9
+            {36, 37, 38, 39}, // row 10
+            {40, 41, 42, 43}, // row 11
+            {44, 45, 46, 47}, // row 12
+            {48, 49, 50, 51}, // row 13
+            {52, 53, 54, 55}, // row 14
+            {56, 57, 58, 59}, // row 15
+            {60, 61, 62, 63}, // row 16
+            {0, 4, 8, 12}, // col 1
+            {1, 5, 9, 13}, // col 2
+            {2, 6, 10, 14}, // col 3
+            {3, 7, 11, 15}, // col 4
+            {16, 20, 24, 28}, // col 5
+            {17, 21, 25, 29}, // col 6
+            {18, 22, 26, 30}, // col 7
+            {19, 23, 27, 31}, // col 8
+            {32, 36, 40, 44}, // col 9
+            {33, 37, 41, 45}, // col 10
+            {34, 38, 42, 46}, // col 11
+            {35, 39, 43, 47}, // col 12
+            {48, 52, 56, 60}, // col 13
+            {49, 53, 57, 61}, // col 14
+            {50, 54, 58, 62}, // col 15
+            {51, 55, 59, 63}, // col 16
+            // vertical rows (through the screen)
+            {0, 16, 32, 48}, // vertical 1
+            {1, 17, 33, 49}, // vertical 2
+            {2, 18, 34, 50}, // vertical 3
+            {3, 19, 35, 51}, // vertical 4
+            {4, 20, 36, 52}, // vertical 5
+            {5, 21, 37, 53}, // vertical 6
+            {6, 22, 38, 54}, // vertical 7
+            {7, 23, 39, 55}, // vertical 8
+            {8, 24, 40, 56}, // vertical 9
+            {9, 25, 41, 57}, // vertical 10
+            {10, 26, 42, 58}, // vertical 11
+            {11, 27, 43, 59}, // vertical 12
+            {12, 28, 44, 60}, // vertical 13
+            {13, 29, 45, 61}, // vertical 14
+            {14, 30, 46, 62}, // vertical 15
+            {15, 31, 47, 63}, // vertical 16
+            // layer diags
+            {0, 5, 10, 15}, // layer 0
+            {3, 6, 9, 12},
+            {16, 21, 26, 31}, // layer 1
+            {19, 22, 25, 28},
+            {32, 37, 42, 47}, // layer 2
+            {35, 38, 41, 44},
+            {48, 53, 58, 63}, // layer 3
+            {51, 54, 57, 60},
+            // layer diags that are cross-layer for us
+            {0, 20, 40, 60}, // from top down
+            {1, 21, 41, 61},
+            {2, 22, 42, 62},
+            {3, 23, 43, 63},
+            {12, 24, 36, 48}, // from bottom up
+            {13, 25, 37, 49},
+            {14, 26, 38, 50},
+            {15, 27, 39, 51},
+            {0, 17, 34, 51}, // left to right
+            {4, 21, 38, 55},
+            {8, 25, 42, 59},
+            {12, 29, 46, 63},
+            {3, 18, 33, 48}, // right to left
+            {7, 22, 37, 52},
+            {11, 26, 41, 56},
+            {15, 30, 45, 60},
+            // main diags
+            {0, 21, 42, 63},
+            {3, 22, 41, 60},
+            {12, 25, 38, 51},
+            {15, 26, 37, 48},
+    };
     private int depth;
     private int currDepth;
+    //private static int pow = 6;
+    //private static final int[] BASES_SPECIAL = new int[]{(int)Math.pow(1, pow), (int)Math.pow(2, pow), (int)Math.pow(3, pow), (int)Math.pow(4, pow)};
     private static final int[] BASES = new int[]{1, (1) * 76 + 1, ((1) * 76 + 1) * 76 + 1, Integer.MAX_VALUE};
-    private static final int[] OPP_EXTRA = new int[]{0, 0, 0, (((1) * 76 + 1) * 76 + 1) * 76};
+    private static final int[] OPP_EXTRA = new int[]{1, 1, (((1) * 76 + 1) * 76 + 1) * 76, 1}; // TODO: check what the optimal values are here
 
     /**
      * here you can get scores[n][x] where n is the n in n-in-line and x is the number of n-in-lines
@@ -15,7 +99,6 @@ public class Player {
     private static GameState bestState;
     public int totalTime = 0;
     public int sortingTime = 0;
-
 
     /**
      * Performs a move
@@ -134,7 +217,7 @@ public class Player {
         gameState.findPossibleMoves(nextStates);
 
         if(depth == 0 || nextStates.size() == 0) {
-            v = evaluate(gameState);
+            v = evaluateLines(gameState);
         }
 
         else if(player == Constants.CELL_X){
@@ -201,9 +284,36 @@ public class Player {
         return v;
     }
 
+    public int evaluateLines(GameState gameState){
+        int[] pInLines = new int[GameState.BOARD_SIZE];
+        int[] oInLines = new int[GameState.BOARD_SIZE];
+        int pInLine, oInLine;
+
+        // for each line
+        for(int[] line : LINES){
+            pInLine = 0;
+            oInLine = 0;
+            for(int i : line){
+                if(gameState.at(i) == Constants.CELL_X)
+                    pInLine++;
+                else if(gameState.at(i) == Constants.CELL_O)
+                    oInLine++;
+            }
+            addInLines(gamma(pInLine, oInLine), pInLines, oInLines);
+        }
+
+        int pScore = 0;
+        int oScore = 0;
+        for(int i = 0; i < pInLines.length; i++){
+            pScore += pInLines[i] * BASES[i];
+            oScore += oInLines[i] * BASES[i] + oInLines[i] * OPP_EXTRA[i];
+        }
+        // X is always max
+        return pScore - oScore;
+    }
+
     //
     public int evaluate(GameState gameState) {
-        int score = 0;
         int[] pInLines = new int[GameState.BOARD_SIZE];
         int[] oInLines = new int[GameState.BOARD_SIZE];
 
