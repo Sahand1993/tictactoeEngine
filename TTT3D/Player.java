@@ -85,8 +85,7 @@ public class Player {
             {12, 25, 38, 51},
             {15, 26, 37, 48},
     };
-    private int depth;
-    private int currDepth;
+    public static int depth = 1;
     //private static int pow = 6;
     //private static final int[] BASES_SPECIAL = new int[]{(int)Math.pow(1, pow), (int)Math.pow(2, pow), (int)Math.pow(3, pow), (int)Math.pow(4, pow)};
     private static final int[] BASES = new int[]{1, (1) * 76 + 1, ((1) * 76 + 1) * 76 + 1, Integer.MAX_VALUE};
@@ -118,92 +117,16 @@ public class Player {
             // Must play "pass" move if there are no other moves possible.
             return new GameState(gameState, new Move());
         }
-        System.err.println(nextStates.size());
         /**
          * Here you should write your algorithms to get the best next move, i.e.
          * the best next state. This skeleton returns a random move instead.
          */
 
-        depth = 1;
         minimax(gameState, depth, Integer.MIN_VALUE, Integer.MAX_VALUE, gameState.getNextPlayer());
         long end = System.nanoTime();
-        System.err.printf("move time: %f\n", (double) (end - start) / 1000000);
         totalTime += end - start;
         return bestState;
     }
-
-    /**
-     * basic minimax with pruning
-     * @param gameState
-     * @param depth
-     * @param alpha
-     * @param beta
-     * @param player
-     */
-    private int oldminimax(GameState gameState, int depth, int alpha, int beta, int player) {
-        int v; // Our evaluation result
-        Vector<GameState> nextStates = new Vector<GameState>();
-        gameState.findPossibleMoves(nextStates);
-        System.err.printf("number of possible moves: %d\n", nextStates.size());
-
-        if(depth == 0 || nextStates.size() == 0) {
-            v = evaluate(gameState);
-        }
-
-        else if(player == Constants.CELL_X){
-            v = Integer.MIN_VALUE;
-            for(GameState nextState : nextStates){
-                v = Math.max(v, minimax(nextState, depth - 1, alpha, beta, Constants.CELL_O));
-                if(v > alpha){
-                    alpha = v;
-                    if(depth == currDepth){
-                        bestState = nextState;
-                    }
-
-                }
-                if(beta <= alpha){
-                    break;
-                }
-            }
-        }
-        else{
-            v = Integer.MAX_VALUE;
-            for(GameState nextState : nextStates){
-                v = Math.min(v, minimax(nextState, depth - 1, alpha, beta, Constants.CELL_X));
-                if(v < beta){
-                    beta = v;
-                    if(depth == currDepth){
-                        bestState = nextState;
-                    }
-                }
-                if(beta <= alpha) {
-                    break;
-                }
-            }
-        }
-        return v;
-    }
-
-    /**
-     * Calls the minimax algorithm on each possible next move and returns the best one.
-     * @param gameState
-     * @param player: the player who is deciding which state in nextStates is best.
-     * @return
-     */
-/*
-    private GameState bestMove(GameState gameState, int player) {
-        int maxScore;
-        int minScore;
-        GameState bestState = null; // the state of the best move
-        if(player == Constants.CELL_X) {// Player is max and wants to maximize the score
-            maxScore = minimax(gameState, MAX_DEPTH, Integer.MIN_VALUE, Integer.MAX_VALUE, player);
-        }
-        else if(player == Constants.CELL_O) { // Player is min and wants to minimize the score
-            minScore = minimax(gameState, MAX_DEPTH, Integer.MIN_VALUE, Integer.MAX_VALUE, player);
-        }
-        return bestState;
-    }
-*/
 
     /**
      * The minimax algorithm with alpha-beta pruning.
@@ -222,16 +145,13 @@ public class Player {
 
         else if(player == Constants.CELL_X){
             // if it's the beginning of the game, only 1 depth is necessary
-            if(depth == currDepth) {
-                long start = System.nanoTime();
+            if(this.depth == depth) {
                 // Order nextStates according to evaluate(nextState)
                 IndexNScore[] indexNScoreArr = new IndexNScore[nextStates.size()];
                 for (int i = 0; i < nextStates.size(); i++) {
                     indexNScoreArr[i] = new IndexNScore(i, evaluate(nextStates.get(i)));
                 }
                 Arrays.sort(indexNScoreArr);
-                long end = System.nanoTime();
-                sortingTime += end - start;
                 v = Integer.MIN_VALUE;
                 int i;
                 GameState nextState;
