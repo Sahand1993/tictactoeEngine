@@ -4,10 +4,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Vector;
-import java.io.BufferedWriter;
-import java.io.FileDescriptor;
-import java.io.FileOutputStream;
-import java.io.OutputStreamWriter;
 
 /**
  * Starts the game for one client.

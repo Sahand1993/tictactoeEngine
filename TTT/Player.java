@@ -2,8 +2,25 @@ package TTT;
 import java.util.*;
 
 public class Player {
-    private static final int MAX_DEPTH = 3;
-    private static final int[] BASES = new int[]{1, 11, 111, 1111};
+    private static int depth = 1;
+    private static GameState bestState;
+    public int totalTime = 0;
+    private static final int[] BASES = new int[]{1, 11, 111, Integer.MAX_VALUE};
+    private static final int[] OPP_EXTRA = new int[]{1, 1, (11+1)*(111+1), 1}; // TODO: check what the optimal values are here
+    private static final int[][] LINES = {
+            {0,1,2,3},      // Row 1
+            {4,5,6,7},      // Row 2
+            {8,9,10,11},    // Row 3
+            {12,13,14,15},  // Row 4
+
+            {0, 4, 8, 12},  // col 1
+            {1, 5, 9, 13},  // col 2
+            {2, 6, 10, 14}, // col 3
+            {3, 7, 11, 15}, // col 4
+
+            {0, 5, 10, 15}, // Diag 1
+            {3, 6, 9, 12}   // Diag 2
+    };
 
     /**
      * Performs a move
@@ -50,7 +67,7 @@ public class Player {
         int tempMax;
         GameState bestState = null; // the state of the best move
         for (GameState nextState : nextStates) {
-            tempMax = minimax(nextState, MAX_DEPTH, Integer.MIN_VALUE, Integer.MAX_VALUE, player);
+            tempMax = minimax(nextState, depth, Integer.MIN_VALUE, Integer.MAX_VALUE, player);
             if (tempMax > maxScore) {
                 maxScore = tempMax;
                 bestState = nextState;
@@ -71,15 +88,48 @@ public class Player {
         gameState.findPossibleMoves(nextStates);
 
         if(depth == 0 || nextStates.size() == 0) {
-            v = evaluate(player, gameState);
+            v = evaluateLines(gameState);
         }
         else if(player == Constants.CELL_X){
-            v = Integer.MIN_VALUE;
-            for(GameState nextState : nextStates){
-                v = Math.max(v, minimax(nextState, depth - 1, alpha, beta, Constants.CELL_O));
-                alpha = Math.max(alpha, v);
-                if(beta <= alpha){
-                    break;
+            // if it's the beginning of the game, only 1 depth is necessary
+            if(this.depth == depth) {
+                // Order nextStates according to evaluate(nextState)
+                IndexNScore[] indexNScoreArr = new IndexNScore[nextStates.size()];
+                for (int i = 0; i < nextStates.size(); i++) {
+                    indexNScoreArr[i] = new IndexNScore(i, evaluate(nextStates.get(i)));
+                }
+                Arrays.sort(indexNScoreArr);
+                v = Integer.MIN_VALUE;
+                int i;
+                GameState nextState;
+                // perform minimax on sorted nextStates
+                for (IndexNScore indexScore : indexNScoreArr) {
+                    i = indexScore.getIndex();
+                    nextState = nextStates.get(i);
+                    v = Math.max(v, minimax(nextState, depth - 1, alpha, beta, Constants.CELL_O));
+                    if (v > alpha) {
+                        alpha = v;
+                        if(this.depth == depth) {
+                            bestState = nextState;
+                        }
+                    }
+                    if (beta <= alpha) {
+                        break;
+                    }
+                }
+            }else{
+                v = Integer.MIN_VALUE;
+                for(GameState nextState : nextStates){
+                    v = Math.max(v, minimax(nextState, depth - 1, alpha, beta, Constants.CELL_O));
+                    if(v > alpha){
+                        alpha = v;
+                        if(this.depth == depth){
+                            bestState = nextState;
+                        }
+                    }
+                    if(beta <= alpha){
+                        break;
+                    }
                 }
             }
         }
@@ -87,7 +137,12 @@ public class Player {
             v = Integer.MAX_VALUE;
             for(GameState nextState : nextStates){
                 v = Math.min(v, minimax(nextState, depth - 1, alpha, beta, Constants.CELL_X));
-                beta = Math.min(beta, v);
+                if(v < beta){
+                    beta = v;
+                    if(this.depth == depth){
+                        bestState = nextState;
+                    }
+                }
                 if(beta <= alpha) {
                     break;
                 }
@@ -96,19 +151,72 @@ public class Player {
         return v;
     }
 
+    public int evaluateLines(GameState gameState){
+        int[] pInLines = new int[GameState.BOARD_SIZE];
+        int[] oInLines = new int[GameState.BOARD_SIZE];
+        int pInLine, oInLine;
+
+        // for each line
+        for(int[] line : LINES){
+            pInLine = 0;
+            oInLine = 0;
+            for(int i : line){
+                if(gameState.at(i) == Constants.CELL_X)
+                    pInLine++;
+                else if(gameState.at(i) == Constants.CELL_O)
+                    oInLine++;
+            }
+            addInLines(gamma(pInLine, oInLine), pInLines, oInLines);
+        }
+
+        int pScore = 0;
+        int oScore = 0;
+        for(int i = 0; i < pInLines.length; i++){
+            pScore += pInLines[i] * BASES[i];
+            oScore += oInLines[i] * BASES[i] + oInLines[i] * OPP_EXTRA[i];
+        }
+        // X is always max
+        return pScore - oScore;
+    }
+
     // TODO:    I think the problem when increasing the depth to 1 is that this function
     // TODO:    doesn't care about the sign, it just does minimax from the perspective
     // TODO:    of the player argument. We should instead make CELL_X always positive, and O
     // TODO:    always negative.
-    private int evaluate(int player, GameState gameState) {
-        int score = 0;
-        int opponent;
-        if(player == Constants.CELL_X)
-            opponent = Constants.CELL_O;
-        else
-            opponent = Constants.CELL_X;
-        int[] pInLine = new int[GameState.BOARD_SIZE];
-        int[] oInLine = new int[GameState.BOARD_SIZE];
+    private int evaluate(GameState gameState) {
+        int[] pInLines = new int[GameState.BOARD_SIZE];
+        int[] oInLines = new int[GameState.BOARD_SIZE];
+
+        int pInLine;
+        int oInLine;
+
+        for(int i = 0; i < GameState.BOARD_SIZE; i++){
+            pInLine = 0;
+            oInLine = 0;
+            for(int j = 0; j < GameState.BOARD_SIZE; j++){
+                if(gameState.at(i, j) == Constants.CELL_X)
+                    pInLine++;
+                else if(gameState.at(i, j) == Constants.CELL_O)
+                    oInLine++;
+            }
+            // if someone has n-in-line, add to pInLines or oInLines
+            addInLines(gamma(pInLine, oInLine), pInLines, oInLines);
+        }
+        // for each column
+        for(int j = 0; j < GameState.BOARD_SIZE; j++){
+            pInLine = 0;
+            oInLine = 0;
+            for(int i = 0; i < GameState.BOARD_SIZE; i++){
+                if(gameState.at(i, j) == Constants.CELL_X)
+                    pInLine++;
+                else if(gameState.at(i, j) == Constants.CELL_O)
+                    oInLine++;
+            }
+            // if someone has n-in-line, add to pInLines or oInLines
+            addInLines(gamma(pInLine, oInLine), pInLines, oInLines);
+        }
+
+
         // Idea for scoring function. Count the pieces in open lines of victory.
         // I.e for all lines on the board with only the player's pieces on it, count
         // them and make that the score. Also subtract the same score for the other
@@ -137,79 +245,7 @@ public class Player {
         // 3 in row = 111 points
         // 4 in row = 1111 points
 
-        // do rows
-        int pInRow;
-        int oInRow;
-        int rowScore;
-        for(int i = 0; i < GameState.BOARD_SIZE; i++){
-            pInRow = 0;
-            oInRow = 0;
-            for(int j = 0; j < GameState.BOARD_SIZE; j++){
-                if(gameState.at(i, j) == player)
-                    pInRow++;
-                else if (gameState.at(i, j) == opponent)
-                    oInRow++;
 
-            }
-            rowScore = gamma(pInRow, oInRow);
-            // if someone has pieces in the row and is also the only one who does
-            if(rowScore > 0){
-                pInLine[rowScore - 1]++;
-            }else if(rowScore < 0){
-                oInLine[-rowScore - 1]++;
-            }
-        }
-
-        // do columns
-        int pInCol;
-        int oInCol;
-        int colScore;
-        for(int j = 0; j < GameState.BOARD_SIZE; j++){
-            pInCol = 0;
-            oInCol = 0;
-            for(int i = 0; i < GameState.BOARD_SIZE; i++){
-                if(gameState.at(i, j) == player)
-                    pInCol++;
-                else if(gameState.at(i, j) == opponent)
-                    oInCol++;
-            }
-            colScore = gamma(pInCol, oInCol);
-            if(colScore > 0)
-                pInLine[colScore - 1]++;
-            else if(colScore < 0)
-                oInLine[-colScore - 1]++;
-        }
-
-        // do diags
-        int pPiecesD1 = 0;
-        int oPiecesD1 = 0;
-        int pPiecesD2 = 0;
-        int oPiecesD2 = 0;
-        for(int i = 0; i < GameState.BOARD_SIZE; i++){
-            // first diagonal
-            if(gameState.at(i, i) == player)
-                pPiecesD1++;
-            else if(gameState.at(i, i) == opponent)
-                oPiecesD1++;
-            // second diagonal
-            if(gameState.at(i, GameState.BOARD_SIZE - 1 - i) == player) {
-                pPiecesD2++;
-            }else if(gameState.at(i, GameState.BOARD_SIZE - 1 - i) == opponent) {
-                oPiecesD2++;
-            }
-        }
-        int diag1Score = gamma(pPiecesD1, oPiecesD1);
-        int diag2Score = gamma(pPiecesD2, oPiecesD2);
-
-        if(diag1Score > 0)
-            pInLine[diag1Score - 1]++;
-        else if(diag1Score < 0)
-            oInLine[-diag1Score - 1]++;
-
-        if(diag2Score > 0)
-            pInLine[diag2Score - 1]++;
-        else if(diag2Score < 0)
-            oInLine[-diag2Score - 1]++;
 
         // do something with pInLine and oInLine.
 
@@ -218,12 +254,12 @@ public class Player {
         // and each 4 in line worth (11 * 10 + 1) * 10 + 1.
         int pScore = 0;
         int oScore = 0;
-        for(int i = 0; i < pInLine.length; i++){
-            pScore += pInLine[i] * BASES[i];
-            oScore += oInLine[i] * BASES[i];
+        for(int i = 0; i < pInLines.length; i++){
+            pScore += pInLines[i] * BASES[i];
+            oScore += oInLines[i] * BASES[i] + oInLines[i] * OPP_EXTRA[i];
         }
         // X is always max
-        return (player == Constants.CELL_X) ? pScore - oScore : oScore - pScore;
+        return pScore - oScore;
     }
 
     /**
@@ -239,5 +275,32 @@ public class Player {
             res = -b;
         }
         return res;
+    }
+
+    private class IndexNScore implements Comparable<IndexNScore> {
+        int index;
+        int score;
+
+        public IndexNScore(int index, int score){
+            this.index = index;
+            this.score = score;
+        }
+
+        public int getIndex() {
+            return index;
+        }
+
+        @Override
+        public int compareTo(IndexNScore o) {
+            return this.score - o.score;
+        }
+    }
+
+    private void addInLines(int rowScore, int[] pInLines, int[] oInLines) {
+        if(rowScore > 0)
+            pInLines[rowScore - 1]++;
+        else if(rowScore < 0) {
+            oInLines[-rowScore - 1]++;
+        }
     }
 }
